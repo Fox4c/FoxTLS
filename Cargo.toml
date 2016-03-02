@@ -1,0 +1,12 @@
+[package]
+name = "caesar"
+version = "0.1.0"
+authors = ["Arturo Vergara <hello@arturovm.me>"]
+
+[dependencies]
+openssl = "*"
+
+[features]
+default = ["tlsv1_2"]
+
+tlsv1_2 = ["openssl/tlsv1_2"]
