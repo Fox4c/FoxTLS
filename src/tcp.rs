@@ -86,8 +86,11 @@ impl Write for TlsTcpStream {
 
 fn new_ssl_context(key: &str, cert: &str) -> Result<SslContext> {
     let mut ctx = try!(ssl::SslContext::new(SslMethod::Tlsv1_2).map_err(|e| CaesarError::Ssl(e)));
-    // disable compression and SSLv2 support
-    ctx.set_options(ssl::SSL_OP_NO_COMPRESSION | ssl::SSL_OP_NO_SSLV2);
+    // use recommended settings
+    let opts = ssl::SSL_OP_CIPHER_SERVER_PREFERENCE | ssl::SSL_OP_NO_COMPRESSION |
+               ssl::SSL_OP_NO_TICKET | ssl::SSL_OP_NO_SSLV2 | ssl::SSL_OP_NO_SSLV3 |
+               ssl::SSL_OP_NO_TLSV1;
+    ctx.set_options(opts);
     // set strong suite of ciphers
     try!(ctx.set_cipher_list("ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:\
                               DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:\
