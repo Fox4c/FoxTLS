@@ -7,6 +7,7 @@ authors = ["Arturo Vergara <hello@arturovm.me>"]
 openssl = "*"
 
 [features]
-default = ["tlsv1_2"]
+default = ["tlsv1_2", "rfc5114"]
 
 tlsv1_2 = ["openssl/tlsv1_2"]
+rfc5114 = ["openssl/rfc5114"]

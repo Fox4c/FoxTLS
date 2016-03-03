@@ -2,6 +2,7 @@ use std::io::{self, Read, Write};
 use std::net::{SocketAddr, ToSocketAddrs, TcpListener, TcpStream, Shutdown};
 
 use openssl::ssl::{self, SslContext, SslMethod, Ssl, SslStream};
+use openssl::dh::DH;
 use openssl::x509::X509FileType;
 
 use super::types::{CaesarError, Result};
@@ -89,10 +90,23 @@ fn new_ssl_context(key: &str, cert: &str) -> Result<SslContext> {
                ssl::SSL_OP_NO_SSLV3 | ssl::SSL_OP_NO_TLSV1 | ssl::SSL_OP_NO_TLSV1_1;
     ctx.set_options(opts);
     // set strong suite of ciphers
-    try!(ctx.set_cipher_list("ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:\
-                              DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:\
-                              !MD5:!DSS")
+    try!(ctx.set_cipher_list("ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:\
+                              ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:\
+                              ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:\
+                              DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:\
+                              ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:\
+                              ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:\
+                              ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:\
+                              ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:\
+                              DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:\
+                              ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:\
+                              EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:\
+                              AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:\
+                              !DSS")
             .map_err(|e| CaesarError::Ssl(e)));
+    // enable forward secrecy
+    let dh = try!(DH::get_2048_256().map_err(|e| CaesarError::Ssl(e)));
+    try!(ctx.set_tmp_dh(dh).map_err(|e| CaesarError::Ssl(e)));
     // set cert and key files
     try!(ctx.set_private_key_file(key, X509FileType::PEM).map_err(|e| CaesarError::Ssl(e)));
     try!(ctx.set_certificate_file(cert, X509FileType::PEM).map_err(|e| CaesarError::Ssl(e)));
