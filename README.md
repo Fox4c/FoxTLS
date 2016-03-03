@@ -8,17 +8,36 @@ _Note: This library hasn't been tested._
 
 This library abstracts over a regular TCP listener from the Rust standard library, and provides a drop-in* interface replacement that layers TLSv1.2 with a set of strong cipher suites on top of the connection.
 
-It uses the [OpenSSL library Rust bindings](https://github.com/sfackler/rust-openssl) by Steven Fackler for the underlying TLS functionality. For added security, compile this crate against LibreSSL (instructions provided below).
+It uses the [OpenSSL library Rust bindings](https://github.com/sfackler/rust-openssl) by Steven Fackler for the underlying TLS functionality. If you don't trust OpenSSL (I don't), you can compile this crate against LibreSSL (instructions provided below).
 
 _* It's only necessary to prepend `Tls` to the regular types (e.g. `TlsTcpListener`), and write error handling code for the new error types._
 
 ## Compiling
 
+### Prerequisites
 
+- OpenSSL/LibreSSL headers
 
+How and where you install these headers depends on your platform. A quick Google search should do the trick.
+
+### Building
+
+As described in the [README](https://github.com/sfackler/rust-openssl) for the Rust OpenSSL bindings, there are various ways of compiling this crate, depending on your platform. However, the most universal route, is to configure your build manually with environment variables (and this is required anyway for compiling against LibreSSL). There are only three:
+
+- `OPENSSL_LIB_DIR`: Use this to specify the path to the _lib_ dir of your SSL library of choice
+- `OPENSSL_INCLUDE_DIR`: Use this to specify the path to the _include_ dir of your SSL library of choice
+- `OPENSSL_STATIC`: [optional] This is a boolean variable specifying whether to statically link against your SSL library
+
+The complete command might look something like this:
+
+```bash
+$ env OPENSSL_LIB_DIR="/usr/local/opt/libressl/lib" \
+        OPENSSL_INCLUDE_DIR="/usr/local/opt/libressl/include" \
+        OPENSSL_STATIC=true cargo build
+```
 ## Usage
 
-Caesar provides a `CaesarError` enum type, with a variant for I/O errors and another one for SSL errors. You can find the specifics in the [library docs]().
+Caesar provides a `CaesarError` enum type, with a variant for I/O errors and another one for SSL errors. You can find the specifics in the library docs [not yet generated].
 
 ```rust
 extern crate caesar;
