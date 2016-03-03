@@ -9,8 +9,7 @@ use super::types::{CaesarError, Result};
 #[derive(Debug)]
 pub struct TlsTcpListener {
     listener: TcpListener,
-    key: String,
-    cert: String,
+    ctx: SslContext,
 }
 
 #[derive(Debug)]
@@ -27,20 +26,18 @@ impl TlsTcpListener {
     pub fn bind<A: ToSocketAddrs>(addr: A, key: &str, cert: &str) -> Result<TlsTcpListener> {
         // create listener
         let listener = try!(TcpListener::bind(addr).map_err(|e| CaesarError::Io(e)));
+        let ctx = try!(new_ssl_context(&key, &cert));
         Ok(TlsTcpListener {
             listener: listener,
-            key: key.to_owned(),
-            cert: cert.to_owned(),
+            ctx: ctx,
         })
     }
 
     pub fn accept(&self) -> Result<(TlsTcpStream, SocketAddr)> {
         // acept from bare TCP stream
         let (stream, addr) = try!(self.listener.accept().map_err(|e| CaesarError::Io(e)));
-        // setup SSL context
-        let ctx = try!(new_ssl_context(&self.key, &self.cert));
-        // create SSL object with context
-        let ssl = try!(Ssl::new(&ctx).map_err(|e| CaesarError::Ssl(e)));
+        // create SSL object with stored context
+        let ssl = try!(Ssl::new(&self.ctx).map_err(|e| CaesarError::Ssl(e)));
         // accept from encrypted stream
         let tls_stream = try!(SslStream::accept(ssl, stream).map_err(|e| CaesarError::Ssl(e)));
         Ok((TlsTcpStream { stream: tls_stream }, addr))
