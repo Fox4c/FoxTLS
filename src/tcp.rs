@@ -5,7 +5,7 @@ use openssl::ssl::{self, SslContext, SslMethod, Ssl, SslStream};
 use openssl::dh::DH;
 use openssl::x509::X509FileType;
 
-use super::types::{CaesarError, Result};
+use super::types::Result;
 
 #[derive(Debug)]
 pub struct TlsTcpListener {
@@ -26,7 +26,7 @@ pub struct Incoming<'a> {
 impl TlsTcpListener {
     pub fn bind<A: ToSocketAddrs>(addr: A, key: &str, cert: &str) -> Result<TlsTcpListener> {
         // create listener
-        let listener = try!(TcpListener::bind(addr).map_err(|e| CaesarError::Io(e)));
+        let listener = try!(TcpListener::bind(addr));
         let ctx = try!(new_ssl_context(&key, &cert));
         Ok(TlsTcpListener {
             listener: listener,
@@ -36,11 +36,11 @@ impl TlsTcpListener {
 
     pub fn accept(&self) -> Result<(TlsTcpStream, SocketAddr)> {
         // acept from bare TCP stream
-        let (stream, addr) = try!(self.listener.accept().map_err(|e| CaesarError::Io(e)));
+        let (stream, addr) = try!(self.listener.accept());
         // create SSL object with stored context
-        let ssl = try!(Ssl::new(&self.ctx).map_err(|e| CaesarError::Ssl(e)));
+        let ssl = try!(Ssl::new(&self.ctx));
         // accept from encrypted stream
-        let tls_stream = try!(SslStream::accept(ssl, stream).map_err(|e| CaesarError::Ssl(e)));
+        let tls_stream = try!(SslStream::accept(ssl, stream));
         Ok((TlsTcpStream { stream: tls_stream }, addr))
     }
 
@@ -58,7 +58,7 @@ impl<'a> Iterator for Incoming<'a> {
 
 impl TlsTcpStream {
     pub fn peer_addr(&self) -> Result<SocketAddr> {
-        self.stream.get_ref().peer_addr().map_err(|e| CaesarError::Io(e))
+        Ok(try!(self.stream.get_ref().peer_addr()))
     }
 
     pub fn shutdown(&self, how: Shutdown) -> io::Result<()> {
@@ -83,13 +83,13 @@ impl Write for TlsTcpStream {
 }
 
 fn new_ssl_context(key: &str, cert: &str) -> Result<SslContext> {
-    let mut ctx = try!(ssl::SslContext::new(SslMethod::Tlsv1_2).map_err(|e| CaesarError::Ssl(e)));
+    let mut ctx = try!(ssl::SslContext::new(SslMethod::Tlsv1_2));
     // use recommended settings
     let opts = ssl::SSL_OP_CIPHER_SERVER_PREFERENCE | ssl::SSL_OP_NO_COMPRESSION |
                ssl::SSL_OP_NO_TICKET | ssl::SSL_OP_NO_SSLV2 |
                ssl::SSL_OP_NO_SSLV3 | ssl::SSL_OP_NO_TLSV1 | ssl::SSL_OP_NO_TLSV1_1;
     ctx.set_options(opts);
-    // set strong suite of ciphers
+    // set strong cipher suites
     try!(ctx.set_cipher_list("ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:\
                               ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:\
                               ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:\
@@ -102,15 +102,14 @@ fn new_ssl_context(key: &str, cert: &str) -> Result<SslContext> {
                               ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:\
                               EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:\
                               AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:\
-                              !DSS")
-            .map_err(|e| CaesarError::Ssl(e)));
+                              !DSS"));
     // enable forward secrecy
-    let dh = try!(DH::get_2048_256().map_err(|e| CaesarError::Ssl(e)));
-    try!(ctx.set_tmp_dh(dh).map_err(|e| CaesarError::Ssl(e)));
+    let dh = try!(DH::get_2048_256());
+    try!(ctx.set_tmp_dh(dh));
     // set cert and key files
-    try!(ctx.set_private_key_file(key, X509FileType::PEM).map_err(|e| CaesarError::Ssl(e)));
-    try!(ctx.set_certificate_file(cert, X509FileType::PEM).map_err(|e| CaesarError::Ssl(e)));
+    try!(ctx.set_private_key_file(key, X509FileType::PEM));
+    try!(ctx.set_certificate_file(cert, X509FileType::PEM));
     // check integrity
-    try!(ctx.check_private_key().map_err(|e| CaesarError::Ssl(e)));
+    try!(ctx.check_private_key());
     Ok(ctx)
 }
