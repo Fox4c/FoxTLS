@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::io::{self, Read, Write};
 use std::net::{SocketAddr, ToSocketAddrs, TcpListener, TcpStream, Shutdown};
 
@@ -14,9 +15,7 @@ pub struct TlsTcpListener {
 }
 
 #[derive(Debug)]
-pub struct TlsTcpStream {
-    stream: SslStream<TcpStream>,
-}
+pub struct TlsTcpStream(RefCell<SslStream<TcpStream>>);
 
 #[derive(Debug)]
 pub struct Incoming<'a> {
@@ -41,7 +40,7 @@ impl TlsTcpListener {
         let ssl = try!(Ssl::new(&self.ctx));
         // accept from encrypted stream
         let tls_stream = try!(SslStream::accept(ssl, stream));
-        Ok((TlsTcpStream { stream: tls_stream }, addr))
+        Ok((TlsTcpStream(RefCell::new(tls_stream)), addr))
     }
 
     pub fn incoming(&self) -> Incoming {
@@ -58,27 +57,43 @@ impl<'a> Iterator for Incoming<'a> {
 
 impl TlsTcpStream {
     pub fn peer_addr(&self) -> Result<SocketAddr> {
-        Ok(try!(self.stream.get_ref().peer_addr()))
+        Ok(try!(self.0.borrow().get_ref().peer_addr()))
     }
 
     pub fn shutdown(&self, how: Shutdown) -> io::Result<()> {
-        self.stream.get_ref().shutdown(how)
+        self.0.borrow().get_ref().shutdown(how)
     }
 }
 
 impl Read for TlsTcpStream {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.stream.read(buf)
+        self.0.borrow_mut().read(buf)
     }
 }
 
 impl Write for TlsTcpStream {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.stream.write(buf)
+        self.0.borrow_mut().write(buf)
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        self.stream.flush()
+        self.0.borrow_mut().flush()
+    }
+}
+
+impl<'a> Read for &'a TlsTcpStream {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.0.borrow_mut().read(buf)
+    }
+}
+
+impl<'a> Write for &'a TlsTcpStream {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.0.borrow_mut().write(buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.0.borrow_mut().flush()
     }
 }
 
