@@ -2,7 +2,8 @@
 
 A drop-in replacement for the Rust standard library TCP listener with TLSv1.2 enabled.
 
-[Documentation](https://arturovm.me/rustdoc/caesar/index.html)
+- [Documentation](https://arturovm.me/rustdoc/caesar/index.html)
+- [Crate](https://crates.io/crates/caesar)
 
 _Note: This library hasn't been tested._
 

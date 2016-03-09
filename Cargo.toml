@@ -1,10 +1,17 @@
 [package]
 name = "caesar"
+description = "A drop-in replacement for the Rust standard library TCP listener with TLSv1.2 enabled."
+documentation = "https://arturovm.me/rustdoc/caesar/index.html"
+repository = "https://github.com/Postage/caesar"
+readme = "README.md"
+keywords = ["tls", "ssl", "tcp", "crypto"]
+license = "MIT"
+
 version = "0.1.0"
 authors = ["Arturo Vergara <hello@arturovm.me>"]
 
 [dependencies]
-openssl = "*"
+openssl = "0.7.6"
 
 [features]
 default = ["tlsv1_2", "rfc5114"]
