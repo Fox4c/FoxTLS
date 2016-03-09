@@ -8,21 +8,28 @@ use openssl::x509::X509FileType;
 
 use super::types::Result;
 
+/// Abstracts over a `TcpListener`, and layers TLSv1.2 on top.
 #[derive(Debug)]
 pub struct TlsTcpListener {
     listener: TcpListener,
     ctx: SslContext,
 }
 
+/// Handles encrypted `TcpStream`s for you, and provides a
+/// simple read/write interface.
 #[derive(Debug)]
 pub struct TlsTcpStream(RefCell<SslStream<TcpStream>>);
 
+
+/// A re-implementation of the `std::net::Incoming` iterator type.
 #[derive(Debug)]
 pub struct Incoming<'a> {
     listener: &'a TlsTcpListener,
 }
 
 impl TlsTcpListener {
+    /// Behaves exactly like `TcpStream::bind`. It expects paths to key and certificate files in
+    /// PEM format.
     pub fn bind<A: ToSocketAddrs>(addr: A, key: &str, cert: &str) -> Result<TlsTcpListener> {
         // create listener
         let listener = try!(TcpListener::bind(addr));

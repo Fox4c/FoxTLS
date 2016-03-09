@@ -2,6 +2,8 @@
 
 A drop-in replacement for the Rust standard library TCP listener with TLSv1.2 enabled.
 
+[Documentation](https://arturovm.me/rustdoc/caesar/index.html)
+
 _Note: This library hasn't been tested._
 
 ## Introduction
@@ -37,7 +39,7 @@ $ env OPENSSL_LIB_DIR="/usr/local/opt/libressl/lib" \
 ```
 ## Usage
 
-Caesar provides a `CaesarError` enum type, with a variant for I/O errors and another one for SSL errors. You can find the specifics in the library docs [not yet generated].
+Caesar provides a `CaesarError` enum type, with a variant for I/O errors and another one for SSL errors. You can find the specifics in the library [docs](https://arturovm.me/rustdoc/caesar/index.html).
 
 ```rust
 extern crate caesar;
