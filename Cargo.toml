@@ -7,7 +7,7 @@ readme = "README.md"
 keywords = ["tls", "ssl", "tcp", "crypto"]
 license = "MIT"
 
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Arturo Vergara <hello@arturovm.me>"]
 
 [dependencies]
