@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::io::{self, Read, Write};
 use std::net::{SocketAddr, ToSocketAddrs, TcpListener, TcpStream, Shutdown};
+use std::time::Duration;
 
 use openssl::ssl::{self, SslContext, SslMethod, Ssl, SslStream};
 use openssl::dh::DH;
@@ -67,8 +68,16 @@ impl TlsTcpStream {
         Ok(try!(self.0.borrow().get_ref().peer_addr()))
     }
 
+    pub fn local_addr(&self) -> Result<SocketAddr> {
+        Ok(try!(self.0.borrow().get_ref().local_addr()))
+    }
+
     pub fn shutdown(&self, how: Shutdown) -> io::Result<()> {
         self.0.borrow().get_ref().shutdown(how)
+    }
+
+    pub fn set_read_timeout(&self, dur: Option<Duration>) -> io::Result<()> {
+        self.0.borrow().get_ref().set_read_timeout(dur)
     }
 }
 
