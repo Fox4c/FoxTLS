@@ -7,8 +7,8 @@ readme = "README.md"
 keywords = ["tls", "ssl", "tcp", "crypto"]
 license = "MIT"
 
-version = "0.2.0"
-authors = ["Arturo Vergara <hello@arturovm.me>"]
+version = "0.2.1"
+authors = ["Arturo Vergara <hello@arturovm.me>", Joshua Steffensky "steffensky@fox4c.com"]
 
 [dependencies]
 openssl = "0.7.6"
