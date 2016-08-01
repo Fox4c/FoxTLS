@@ -3,7 +3,7 @@ use std::io::{self, Read, Write};
 use std::net::{SocketAddr, ToSocketAddrs, TcpListener, TcpStream, Shutdown};
 use std::time::Duration;
 
-use openssl::ssl::{self, SslContext, SslMethod, Ssl, SslStream};
+use openssl::ssl::{self, SslContext, SslMethod, Ssl, SslStream, SslContextOptions};
 use openssl::dh::DH;
 use openssl::x509::X509FileType;
 
@@ -32,9 +32,14 @@ impl TlsTcpListener {
     /// Behaves exactly like `TcpStream::bind`. It expects paths to key and certificate files in
     /// PEM format.
     pub fn bind<A: ToSocketAddrs>(addr: A, key: &str, cert: &str) -> Result<TlsTcpListener> {
+        TlsTcpListener::bind_expert(addr, key, cert, None, None, None)
+    }
+
+    //new expert bind methode => gives additional options to define sslmethode, ssloptions, and list of ciphers to use
+    pub fn bind_expert<A: ToSocketAddrs>(addr: A, key: &str, cert: &str, method: Option<SslMethod>, opts: Option<SslContextOptions>, cipher_list: Option<String>) -> Result<TlsTcpListener> {
         // create listener
         let listener = try!(TcpListener::bind(addr));
-        let ctx = try!(new_ssl_context(&key, &cert));
+        let ctx = try!(new_ssl_context(&key, &cert, method, opts, cipher_list));
         Ok(TlsTcpListener {
             listener: listener,
             ctx: ctx,
@@ -113,15 +118,31 @@ impl<'a> Write for &'a TlsTcpStream {
     }
 }
 
-fn new_ssl_context(key: &str, cert: &str) -> Result<SslContext> {
-    let mut ctx = try!(ssl::SslContext::new(SslMethod::Tlsv1_2));
-    // use recommended settings
-    let opts = ssl::SSL_OP_CIPHER_SERVER_PREFERENCE | ssl::SSL_OP_NO_COMPRESSION |
-               ssl::SSL_OP_NO_TICKET | ssl::SSL_OP_NO_SSLV2 |
-               ssl::SSL_OP_NO_SSLV3 | ssl::SSL_OP_NO_TLSV1 | ssl::SSL_OP_NO_TLSV1_1;
+fn new_ssl_context(key: &str, cert: &str, method: Option<SslMethod>, opts: Option<SslContextOptions>, cipher_list: Option<String>) -> Result<SslContext> {
+    let mut ctx = try!(ssl::SslContext::new(
+        match method{
+        Some(x) => x,
+        None => SslMethod::Tlsv1_2, //default option
+    }));
+
+
+    let opts = match opts{
+        Some(x) => x,
+
+        // use recommended settings => default
+        None => ssl::SSL_OP_CIPHER_SERVER_PREFERENCE | ssl::SSL_OP_NO_COMPRESSION |
+            ssl::SSL_OP_NO_TICKET | ssl::SSL_OP_NO_SSLV2 |
+            ssl::SSL_OP_NO_SSLV3 | ssl::SSL_OP_NO_TLSV1 | ssl::SSL_OP_NO_TLSV1_1,
+    };
+
     ctx.set_options(opts);
-    // set strong cipher suites
-    try!(ctx.set_cipher_list("ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:\
+
+
+    let ciphers = match cipher_list {
+        Some(x) => x,
+
+        // set strong cipher suites
+        None => String::from("ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:\
                               ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:\
                               ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:\
                               DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:\
@@ -133,7 +154,10 @@ fn new_ssl_context(key: &str, cert: &str) -> Result<SslContext> {
                               ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:\
                               EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:\
                               AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:\
-                              !DSS"));
+                              !DSS"),
+    };
+
+    try!(ctx.set_cipher_list(ciphers.as_str()));
     // enable forward secrecy
     let dh = try!(DH::get_2048_256());
     try!(ctx.set_tmp_dh(dh));
