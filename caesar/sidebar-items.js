@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["CaesarError",""]],"struct":[["Incoming","A re-implementation of the `std::net::Incoming` iterator type."],["TlsTcpListener","Abstracts over a `TcpListener`, and layers TLSv1.2 on top."],["TlsTcpStream","Handles encrypted `TcpStream`s for you, and provides a simple read/write interface."]],"type":[["Result",""]]});
