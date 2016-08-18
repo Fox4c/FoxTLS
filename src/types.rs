@@ -4,46 +4,46 @@ use std::convert::From;
 use openssl::ssl::error::SslError;
 
 #[derive(Debug)]
-pub enum CaesarError {
+pub enum FoxTLSError {
     Ssl(SslError),
     Io(io::Error),
 }
 
-pub type Result<T> = result::Result<T, CaesarError>;
+pub type Result<T> = result::Result<T, FoxTLSError>;
 
-impl fmt::Display for CaesarError {
+impl fmt::Display for FoxTLSError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            CaesarError::Ssl(ref e) => write!(f, "SSL error: {}", e),
-            CaesarError::Io(ref e) => write!(f, "IO error: {}", e),
+            FoxTLSError::Ssl(ref e) => write!(f, "SSL error: {}", e),
+            FoxTLSError::Io(ref e) => write!(f, "IO error: {}", e),
         }
     }
 }
 
-impl error::Error for CaesarError {
+impl error::Error for FoxTLSError {
     fn description(&self) -> &str {
         match *self {
-            CaesarError::Ssl(ref e) => e.description(),
-            CaesarError::Io(ref e) => e.description(),
+            FoxTLSError::Ssl(ref e) => e.description(),
+            FoxTLSError::Io(ref e) => e.description(),
         }
     }
 
     fn cause(&self) -> Option<&error::Error> {
         match *self {
-            CaesarError::Ssl(ref e) => Some(e),
-            CaesarError::Io(ref e) => Some(e),
+            FoxTLSError::Ssl(ref e) => Some(e),
+            FoxTLSError::Io(ref e) => Some(e),
         }
     }
 }
 
-impl From<SslError> for CaesarError {
-    fn from(err: SslError) -> CaesarError {
-        CaesarError::Ssl(err)
+impl From<SslError> for FoxTLSError {
+    fn from(err: SslError) -> FoxTLSError {
+        FoxTLSError::Ssl(err)
     }
 }
 
-impl From<io::Error> for CaesarError {
-    fn from(err: io::Error) -> CaesarError {
-        CaesarError::Io(err)
+impl From<io::Error> for FoxTLSError {
+    fn from(err: io::Error) -> FoxTLSError {
+        FoxTLSError::Io(err)
     }
 }

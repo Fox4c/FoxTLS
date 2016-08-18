@@ -1,17 +1,18 @@
 [package]
-name = "caesar"
-description = "A drop-in replacement for the Rust standard library TCP listener with TLSv1.2 enabled."
-documentation = "https://arturovm.me/rustdoc/caesar/index.html"
-repository = "https://github.com/Postage/caesar"
+name = "FoxTLS"
+description = "A lightweight non-blocking TLS wrapper for the Rust standard library TCP listener."
+documentation = "https://fox4c.github.io/FoxTLS/"
+repository = "https://github.com/Fox4c/FoxTLS"
 readme = "README.md"
-keywords = ["tls", "ssl", "tcp", "crypto"]
+keywords = ["tls", "ssl", "tcp", "crypto", "mio", "non-blocking"]
 license = "MIT"
 
-version = "0.2.1"
-authors = ["Arturo Vergara <hello@arturovm.me>", "Joshua Steffensky <steffensky@fox4c.com>"]
+version = "0.0.1"
+authors = ["Joshua Steffensky <steffensky@fox4c.com>"]
 
 [dependencies]
-openssl = "0.7.6"
+openssl = "^0.7.6"
+mio = "^0.5.1"
 
 [features]
 default = ["tlsv1_2", "rfc5114"]

@@ -1,7 +1,8 @@
 use std::cell::RefCell;
 use std::io::{self, Read, Write};
-use std::net::{SocketAddr, ToSocketAddrs, TcpListener, TcpStream, Shutdown};
-use std::time::Duration;
+use std::net::{SocketAddr, ToSocketAddrs, Shutdown};
+use mio::tcp::{TcpListener, TcpStream};
+//use std::time::Duration;
 
 use openssl::ssl::{self, SslContext, SslMethod, Ssl, SslStream, SslContextOptions};
 use openssl::dh::DH;
@@ -9,7 +10,7 @@ use openssl::x509::X509FileType;
 
 use super::types::Result;
 
-/// Abstracts over a `TcpListener`, and layers TLSv1.2 on top.
+/// Abstracts over a `TcpListener`, and layers TLS on top.
 #[derive(Debug)]
 pub struct TlsTcpListener {
     listener: TcpListener,
@@ -37,8 +38,9 @@ impl TlsTcpListener {
 
     //new expert bind methode => gives additional options to define sslmethode, ssloptions, and list of ciphers to use
     pub fn bind_expert<A: ToSocketAddrs>(addr: A, key: &str, cert: &str, method: Option<SslMethod>, opts: Option<SslContextOptions>, cipher_list: Option<String>) -> Result<TlsTcpListener> {
+        let sockaddr = try!(addr.to_socket_addrs()).next().unwrap();
         // create listener
-        let listener = try!(TcpListener::bind(addr));
+        let listener = try!(TcpListener::bind(&sockaddr));
         let ctx = try!(new_ssl_context(&key, &cert, method, opts, cipher_list));
         Ok(TlsTcpListener {
             listener: listener,
@@ -46,14 +48,18 @@ impl TlsTcpListener {
         })
     }
 
-    pub fn accept(&self) -> Result<(TlsTcpStream, SocketAddr)> {
+    pub fn accept(&self) -> Result<Option<(TlsTcpStream, SocketAddr)>> {
         // acept from bare TCP stream
-        let (stream, addr) = try!(self.listener.accept());
+        let acceptoption = try!(self.listener.accept());
+        let (stream, addr) = match acceptoption{
+            Some((s,a)) => (s,a),
+            None        => return Ok(None),
+        };
         // create SSL object with stored context
         let ssl = try!(Ssl::new(&self.ctx));
         // accept from encrypted stream
         let tls_stream = try!(SslStream::accept(ssl, stream));
-        Ok((TlsTcpStream(RefCell::new(tls_stream)), addr))
+        Ok(Some((TlsTcpStream(RefCell::new(tls_stream)), addr)))
     }
 
     pub fn incoming(&self) -> Incoming {
@@ -64,7 +70,24 @@ impl TlsTcpListener {
 impl<'a> Iterator for Incoming<'a> {
     type Item = Result<TlsTcpStream>;
     fn next(&mut self) -> Option<Result<TlsTcpStream>> {
-        Some(self.listener.accept().map(|p| p.0))
+        let mut tmp: Option<(TlsTcpStream, SocketAddr)> = match self.listener.accept() {
+            Err(x) => return Some(Err(x)),
+            Ok(x) => x,
+        };
+        
+        loop{
+             match tmp{
+                None => tmp = match self.listener.accept(){
+                    Err(x) => return Some(Err(x)),
+                    Ok(x) => x,
+                },
+                Some(_) => break,
+            }
+        }
+        
+        let (stream, _) = tmp.unwrap();
+        
+        Some(Ok(stream))
     }
 }
 
@@ -80,10 +103,7 @@ impl TlsTcpStream {
     pub fn shutdown(&self, how: Shutdown) -> io::Result<()> {
         self.0.borrow().get_ref().shutdown(how)
     }
-
-    pub fn set_read_timeout(&self, dur: Option<Duration>) -> io::Result<()> {
-        self.0.borrow().get_ref().set_read_timeout(dur)
-    }
+    
 }
 
 impl Read for TlsTcpStream {

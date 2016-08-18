@@ -52,10 +52,11 @@
 //! drop(listener);
 //! ```
 
+extern crate mio;
 extern crate openssl;
 
 mod types;
 mod tcp;
 
-pub use types::{Result, CaesarError};
+pub use types::{Result, FoxTLSError};
 pub use tcp::*;
