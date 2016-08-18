@@ -1,5 +1,5 @@
 [package]
-name = "FoxTLS"
+name = "foxtls"
 description = "A lightweight non-blocking TLS wrapper for the Rust standard library TCP listener."
 documentation = "https://fox4c.github.io/FoxTLS/"
 repository = "https://github.com/Fox4c/FoxTLS"
